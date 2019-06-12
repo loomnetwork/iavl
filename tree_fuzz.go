@@ -111,7 +111,7 @@ func (p *Program) ExecuteBlock(tree *MutableTree) error {
 func GenerateBlocks(numBlocks, blockSize int) []*Program {
 	var history []*Program
 	for i := 0; i < numBlocks; i++ {
-		history = append(history, getRandomBlock(blockSize))
+		history = append(history, getRandomBlockWithRepeat(blockSize))
 	}
 	return history
 }
@@ -125,6 +125,24 @@ func getRandomBlock(size int) *Program {
 		switch common.RandInt() % 3 {
 		case 0, 1:
 			p.addInstruction(instruction{op: "SET", k: k, v: v})
+		case 2:
+			p.addInstruction(instruction{op: "REMOVE", k: k})
+		}
+	}
+	return p
+}
+
+func getRandomBlockWithRepeat(size int) *Program {
+	p := &Program{}
+	repeatKey := []byte("R")
+	for p.size() < size {
+		k, v := []byte(common.RandStr(1)), []byte(common.RandStr(1))
+
+		switch common.RandInt() % 4 {
+		case 0:
+			p.addInstruction(instruction{op: "SET", k: k, v: v})
+		case 3, 1:
+			p.addInstruction(instruction{op: "SET", k: repeatKey, v: v})
 		case 2:
 			p.addInstruction(instruction{op: "REMOVE", k: k})
 		}

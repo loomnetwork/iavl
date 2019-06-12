@@ -330,6 +330,7 @@ func (tree *MutableTree) SaveVersion() ([]byte, int64, error) {
 		return hash, version, err
 	}
 	tree.ndb.Commit()
+	tree.orphans = map[string]int64{}
 	return tree.setVersion(version)
 }
 
@@ -373,7 +374,7 @@ func (tree *MutableTree) saveTree() ([]byte, int64, error) {
 		tree.ndb.SaveOrphans(version, tree.orphans)
 		tree.ndb.SaveRoot(tree.root, version)
 	}
-	tree.ndb.Commit()
+
 	return nil, version, nil
 }
 
@@ -384,7 +385,7 @@ func (tree *MutableTree) setVersion(version int64) ([]byte, int64, error) {
 	// Set new working tree.
 	tree.ImmutableTree = tree.ImmutableTree.clone()
 	tree.lastSaved = tree.ImmutableTree.clone()
-	tree.orphans = map[string]int64{}
+
 	return tree.Hash(), version, nil
 }
 
@@ -423,7 +424,7 @@ func (tree *MutableTree) DeleteMemoryVersion(version int64, noPreviousVersion bo
 	if !noPreviousVersion {
 		previous = getPreviousVersion(tree.versions, version)
 	}
-	tree.ndb.DeleteMemoryVersion(version, previous)
+	tree.ndb.DeleteMemoryVersion(version, previous, &tree.orphans)
 	delete(tree.versions, version)
 
 	return nil

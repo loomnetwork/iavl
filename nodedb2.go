@@ -156,6 +156,10 @@ func (ndb *nodeDB2) DeleteVersion(version int64, checkLatestVersion bool) {
 	ndb.deleteRoot(version, checkLatestVersion)
 }
 
+func (ndb *nodeDB2) DeleteMemoryVersion(version, previous int64, _ *map[string]int64) {
+	ndb.DeleteVersion(version, false)
+}
+
 // Saves orphaned nodes to disk under a special prefix.
 // version: the new version being saved.
 // orphans: the orphan nodes created since version-1

@@ -39,6 +39,7 @@ type NodeDB interface {
 	Has(hash []byte) bool
 	SaveBranch(node *Node) []byte
 	DeleteVersion(version int64, checkLatestVersion bool)
+	DeleteMemoryVersion(version, previous int64, unsavedOrphans *map[string]int64)
 	SaveOrphans(version int64, orphans map[string]int64)
 	SaveRoot(root *Node, version int64) error
 	SaveEmptyRoot(version int64) error
@@ -212,11 +213,11 @@ func (ndb *nodeDB) DeleteVersion(version int64, checkLatestVersion bool) {
 }
 
 // DeleteVersion deletes a tree version from memory.
-func (ndb *nodeDB) DeleteMemoryVersion(version, previous int64) {
+func (ndb *nodeDB) DeleteMemoryVersion(version, previous int64, unsavedOrphans *map[string]int64) {
 	ndb.mtx.Lock()
 	defer ndb.mtx.Unlock()
 
-	ndb.deleteOrphansWithPredecessor(version, previous)
+	ndb.deleteOrphansWithPredecessor(version, previous, unsavedOrphans)
 	ndb.deleteRoot(version, false)
 }
 
@@ -250,10 +251,10 @@ func (ndb *nodeDB) deleteOrphans(version int64) {
 	// Will be zero if there is no previous version.
 	predecessor := ndb.getPreviousVersion(version)
 
-	ndb.deleteOrphansWithPredecessor(version, predecessor)
+	ndb.deleteOrphansWithPredecessor(version, predecessor, nil)
 }
 
-func (ndb *nodeDB) deleteOrphansWithPredecessor(version, predecessor int64) {
+func (ndb *nodeDB) deleteOrphansWithPredecessor(version, predecessor int64, unsavedOrphans *map[string]int64) {
 	// Traverse orphans with a lifetime ending at the version specified.
 	// TODO optimize.
 	ndb.traverseOrphansVersion(version, func(key, hash []byte) {
@@ -280,6 +281,31 @@ func (ndb *nodeDB) deleteOrphansWithPredecessor(version, predecessor int64) {
 			ndb.saveOrphan(hash, fromVersion, predecessor)
 		}
 	})
+	if unsavedOrphans == nil {
+		return
+	}
+
+	toVersion := version
+	if toVersion > 1 {
+		toVersion++
+	}
+	for hash, fromVersion := range *unsavedOrphans {
+		key := orphanKeyFormat.Key(toVersion, fromVersion, []byte(hash))
+		hasit := ndb.Has([]byte(hash))
+		hasit = hasit
+
+		ndb.batch.Delete(key)
+		delete(*unsavedOrphans, hash)
+		if predecessor < fromVersion || fromVersion == toVersion {
+			debug("DELETE predecessor:%v fromVersion:%v toVersion:%v %X\n", predecessor, fromVersion, toVersion, hash)
+			ndb.batch.Delete(ndb.nodeKey([]byte(hash)))
+			ndb.uncacheNode([]byte(hash))
+		} else {
+			debug("MOVE predecessor:%v fromVersion:%v toVersion:%v %X\n", predecessor, fromVersion, toVersion, hash)
+			ndb.saveOrphan([]byte(hash), fromVersion, predecessor)
+			(*unsavedOrphans)[hash] = predecessor
+		}
+	}
 }
 
 func (ndb *nodeDB) nodeKey(hash []byte) []byte {
