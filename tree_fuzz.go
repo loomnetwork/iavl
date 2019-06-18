@@ -3,6 +3,7 @@ package iavl
 import (
 	"fmt"
 
+	sha3 "github.com/miguelmota/go-solidity-sha3"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -108,10 +109,20 @@ func (p *Program) ExecuteBlock(tree *MutableTree) error {
 	return nil
 }
 
-func GenerateBlocks(numBlocks, blockSize int) []*Program {
+func GenerateBlocks2(numBlocks, blockSize int) []*Program {
+	fmt.Println()
 	var history []*Program
 	for i := 0; i < numBlocks; i++ {
-		history = append(history, getRandomBlockWithRepeat(blockSize))
+		history = append(history, getRandomBlock2(blockSize))
+	}
+	return history
+}
+
+func GenerateBlocks(numBlocks, blockSize int) []*Program {
+	fmt.Println()
+	var history []*Program
+	for i := 0; i < numBlocks; i++ {
+		history = append(history, getRandomBlock(blockSize))
 	}
 	return history
 }
@@ -122,11 +133,27 @@ func getRandomBlock(size int) *Program {
 	for p.size() < size {
 		k, v := []byte(common.RandStr(1)), []byte(common.RandStr(1))
 
-		switch common.RandInt() % 3 {
-		case 0, 1:
+		switch common.RandInt() % 4 {
+		case 0, 1, 2:
 			p.addInstruction(instruction{op: "SET", k: k, v: v})
-		case 2:
+		case 3:
 			p.addInstruction(instruction{op: "REMOVE", k: k})
+		}
+	}
+	return p
+}
+
+func getRandomBlock2(size int) *Program {
+	p := &Program{}
+
+	for p.size() < size {
+		r, v := []byte(common.RandStr(4)), []byte(common.RandStr(1))
+		key := sha3.SoliditySHA3(r)
+		switch common.RandInt() % 4 {
+		case 0, 1, 2:
+			p.addInstruction(instruction{op: "SET", k: key, v: v})
+		case 3:
+			p.addInstruction(instruction{op: "REMOVE", k: key})
 		}
 	}
 	return p
