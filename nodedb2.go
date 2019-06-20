@@ -80,7 +80,7 @@ func (ndb *nodeDB2) GetNode(hash []byte) *Node {
 }
 
 // SaveNode saves a node to disk.
-func (ndb *nodeDB2) SaveNode(node *Node) {
+func (ndb *nodeDB2) SaveNode(node *Node, flushToDisk bool) {
 	if node.hash == nil {
 		panic("Expected to find node.hash, but none found.")
 	}
@@ -122,24 +122,28 @@ func (ndb *nodeDB2) Has(hash []byte) bool {
 	return ndb.db.Get(key) != nil
 }
 
+func (ndb *nodeDB2) SaveBranch(node *Node, flushToDisk bool) []byte {
+	return ndb.saveBranch(node)
+}
+
 // SaveBranch saves the given node and all of its descendants.
 // NOTE: This function clears leftNode/rigthNode recursively and
 // calls _hash() on the given node.
 // TODO refactor, maybe use hashWithCount() but provide a callback.
-func (ndb *nodeDB2) SaveBranch(node *Node) []byte {
+func (ndb *nodeDB2) saveBranch(node *Node) []byte {
 	if node.persisted {
 		return node.hash
 	}
 
 	if node.leftNode != nil {
-		node.leftHash = ndb.SaveBranch(node.leftNode)
+		node.leftHash = ndb.saveBranch(node.leftNode)
 	}
 	if node.rightNode != nil {
-		node.rightHash = ndb.SaveBranch(node.rightNode)
+		node.rightHash = ndb.saveBranch(node.rightNode)
 	}
 
 	node._hash()
-	ndb.SaveNode(node)
+	ndb.SaveNode(node, true)
 
 	node.leftNode = nil
 	node.rightNode = nil
@@ -254,13 +258,23 @@ func (ndb *nodeDB2) getPreviousVersion(version int64) int64 {
 	defer itr.Close()
 
 	pversion := int64(-1)
-	for ; itr.Valid(); itr.Next() {
+	for itr.Valid() {
 		k := itr.Key()
 		rootKeyFormat.Scan(k, &pversion)
 		return pversion
 	}
 
 	return 0
+}
+
+func (ndb *nodeDB2) ResetMemNodes() {
+}
+
+func (ndb *nodeDB2) ResetBatch() {
+	ndb.batch = ndb.db.NewBatch()
+}
+func (ndb *nodeDB2) RestMemBatch() {
+	ndb.batch = ndb.db.NewBatch()
 }
 
 // deleteRoot deletes the root entry from disk, but not the node it points to.
