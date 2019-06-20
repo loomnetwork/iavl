@@ -171,11 +171,6 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 	if err := node.writeBytes(buf, ndb.getLeafValueCb == nil); err != nil {
 		panic(err)
 	}
-	ndb.batch.Set(ndb.nodeKey(node.hash), buf.Bytes())
-	debug("BATCH SAVE %X %p\n", node.hash, node)
-
-	node.persisted = true
-	ndb.cacheNode(node)
 
 	if flushToDisk == true {
 		ndb.batch.Set(ndb.nodeKey(node.hash), buf.Bytes())
@@ -184,6 +179,7 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 		node.persistedMem = true
 		ndb.memNodes[string(node.hash)] = node
 	}
+	ndb.cacheNode(node)
 }
 
 func (ndb *nodeDB) ResetMemNodes() {
