@@ -218,7 +218,6 @@ func (ndb *nodeDB) DeleteMemoryVersion(version, previous int64, unsavedOrphans *
 	ndb.mtx.Lock()
 	defer ndb.mtx.Unlock()
 
-	ndb.deleteOrphansWithPredecessor(version, previous, unsavedOrphans)
 	ndb.deleteRoot(version, false)
 }
 
