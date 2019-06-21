@@ -48,6 +48,12 @@ func NewNodeDB2(db dbm.DB, cacheSize int, getLeafValueCb func(key []byte) []byte
 	return ndb
 }
 
+func (ndb *nodeDB2) PrintDiskDb() {
+	fmt.Println("disk database **********************************")
+	ndb.db.Print()
+	fmt.Println("***************************************************")
+}
+
 // GetNode gets a node from cache or disk. If it is an inner node, it does not
 // load its children.
 func (ndb *nodeDB2) GetNode(hash []byte) *Node {
@@ -80,7 +86,7 @@ func (ndb *nodeDB2) GetNode(hash []byte) *Node {
 }
 
 // SaveNode saves a node to disk.
-func (ndb *nodeDB2) SaveNode(node *Node, flushToDisk bool) {
+func (ndb *nodeDB2) SaveNode(node *Node, _, _ bool) {
 	if node.hash == nil {
 		panic("Expected to find node.hash, but none found.")
 	}
@@ -122,28 +128,24 @@ func (ndb *nodeDB2) Has(hash []byte) bool {
 	return ndb.db.Get(key) != nil
 }
 
-func (ndb *nodeDB2) SaveBranch(node *Node, flushToDisk bool) []byte {
-	return ndb.saveBranch(node)
-}
-
 // SaveBranch saves the given node and all of its descendants.
 // NOTE: This function clears leftNode/rigthNode recursively and
 // calls _hash() on the given node.
 // TODO refactor, maybe use hashWithCount() but provide a callback.
-func (ndb *nodeDB2) saveBranch(node *Node) []byte {
+func (ndb *nodeDB2) SaveBranch(node *Node, flushToDisk, useMemDB bool) []byte {
 	if node.persisted {
 		return node.hash
 	}
 
 	if node.leftNode != nil {
-		node.leftHash = ndb.saveBranch(node.leftNode)
+		node.leftHash = ndb.SaveBranch(node.leftNode, flushToDisk, useMemDB)
 	}
 	if node.rightNode != nil {
-		node.rightHash = ndb.saveBranch(node.rightNode)
+		node.rightHash = ndb.SaveBranch(node.rightNode, flushToDisk, useMemDB)
 	}
 
 	node._hash()
-	ndb.SaveNode(node, true)
+	ndb.SaveNode(node, flushToDisk, useMemDB)
 
 	node.leftNode = nil
 	node.rightNode = nil
