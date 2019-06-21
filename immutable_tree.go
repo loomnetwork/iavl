@@ -64,6 +64,10 @@ func (t *ImmutableTree) Height() int8 {
 	return t.root.height
 }
 
+func (t *ImmutableTree) PrintDiskDb() {
+	t.ndb.PrintDiskDb()
+}
+
 // Has returns whether or not a key exists.
 func (t *ImmutableTree) Has(key []byte) bool {
 	if t.root == nil {
