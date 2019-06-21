@@ -52,7 +52,6 @@ func MakeNode(buf []byte, getLeafValueCb func(key []byte) []byte) (*Node, cmn.Er
 		return nil, cmn.ErrorWrap(cause, "decoding node.height")
 	}
 	buf = buf[n:]
-
 	size, n, cause := amino.DecodeVarint(buf)
 	if cause != nil {
 		return nil, cmn.ErrorWrap(cause, "decoding node.size")
