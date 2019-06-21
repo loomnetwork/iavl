@@ -332,14 +332,14 @@ func (tree *MutableTree) GetVersioned(key []byte, version int64) (
 // SaveVersionMem saves a new tree version to disk, based on the current state of
 // the tree. Returns the hash and new version number.
 func (tree *MutableTree) SaveVersionMem() ([]byte, int64, error) {
-	return tree.saveVersion(false)
+	return tree.saveVersion(false, true)
 }
 
 // FlushMemDisk saves a new tree to disk and removes all the versions in memory
 // TODO keep some in an LRU Cache
 func (tree *MutableTree) FlushMemVersionDisk() ([]byte, int64, error) {
 	//if version%MutateVersionInterval == 0 {
-	x, y, err := tree.saveVersion(true)
+	x, y, err := tree.saveVersion(true, true)
 	//nextTimeClear = true
 	tree.memversions = map[int64]bool{}
 	tree.ndb.ResetMemNodes()
@@ -351,13 +351,13 @@ func (tree *MutableTree) FlushMemVersionDisk() ([]byte, int64, error) {
 // SaveVersion saves a new tree version to disk, based on the current state of
 // the tree. Returns the hash and new version number.
 func (tree *MutableTree) SaveVersion() ([]byte, int64, error) {
-	return tree.saveVersion(true)
+	return tree.saveVersion(true, false)
 }
 
 // SaveVersion saves a new tree version to disk, based on the current state of
 // the tree. Returns the hash and new version number.
-func (tree *MutableTree) saveVersion(flushToDisk bool) ([]byte, int64, error) {
-	hash, version, err := tree.saveTree(flushToDisk)
+func (tree *MutableTree) saveVersion(flushToDisk, useMemDb bool) ([]byte, int64, error) {
+	hash, version, err := tree.saveTree(flushToDisk, useMemDb)
 	if err != nil {
 		return hash, version, err
 	}
@@ -368,21 +368,23 @@ func (tree *MutableTree) saveVersion(flushToDisk bool) ([]byte, int64, error) {
 
 // Creates a new version and its hash without saving to disk
 func (tree *MutableTree) NewVersion() ([]byte, int64, error) {
-	hash, version, err := tree.saveTree(true)
+	hash, version, err := tree.saveTree(false, false)
 	if err != nil {
 		return hash, version, err
 	}
 	return tree.setVersion(version)
 }
 
-func (tree *MutableTree) saveTree(flushToDisk bool) ([]byte, int64, error) {
+func (tree *MutableTree) saveTree(flushToDisk bool, useMemDb bool) ([]byte, int64, error) {
 	version := tree.version + 1
 
-	if flushToDisk == true {
-		tree.ndb.ResetBatch()
-	} else {
-		tree.ndb.RestMemBatch()
-		tree.memversions[version] = true
+	if useMemDb {
+		if flushToDisk == true {
+			tree.ndb.ResetBatch()
+		} else {
+			tree.ndb.RestMemBatch()
+			tree.memversions[version] = true
+		}
 	}
 
 	if tree.versions[version] {
@@ -409,7 +411,7 @@ func (tree *MutableTree) saveTree(flushToDisk bool) ([]byte, int64, error) {
 	} else {
 		debug("SAVE TREE %v\n", version)
 		// Save the current tree.
-		tree.ndb.SaveBranch(tree.root, flushToDisk)
+		tree.ndb.SaveBranch(tree.root, flushToDisk, useMemDb)
 		tree.ndb.SaveOrphans(version, tree.orphans)
 		tree.ndb.SaveRoot(tree.root, version)
 	}
