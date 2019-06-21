@@ -46,6 +46,7 @@ type NodeDB interface {
 	Commit()
 	String() string
 	MaxChacheSizeExceeded() bool
+	PrintDiskDb()
 
 	getRoot(version int64) []byte
 	getRoots() (map[int64][]byte, error)
@@ -576,4 +577,8 @@ func (ndb *nodeDB) String() string {
 		index++
 	})
 	return "-" + "\n" + str + "-"
+}
+
+func (ndb *nodeDB) PrintDiskDb() {
+	ndb.db.Print()
 }

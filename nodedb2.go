@@ -496,3 +496,7 @@ func (ndb *nodeDB2) String() string {
 func (ndb *nodeDB2) MaxChacheSizeExceeded() bool {
 	return true
 }
+
+func (ndb *nodeDB2) PrintDiskDb() {
+	ndb.db.Print()
+}

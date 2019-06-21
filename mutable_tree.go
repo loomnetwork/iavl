@@ -602,3 +602,7 @@ func (tree *MutableTree) SaveVersionToDB(
 	ndb.Commit()
 	return tree.root.hash, version, nil
 }
+
+func (tree *MutableTree) PrintDiskDb() {
+	tree.ndb.PrintDiskDb()
+}
