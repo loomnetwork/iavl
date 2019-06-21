@@ -365,13 +365,13 @@ func (tree *MutableTree) saveTree() ([]byte, int64, error) {
 		// There can still be orphans, for example if the root is the node being
 		// removed.
 		debug("SAVE EMPTY TREE %v\n", version)
-		tree.ndb.SaveOrphans(version, tree.orphans)
+		//tree.ndb.SaveOrphans(version, tree.orphans)
 		tree.ndb.SaveEmptyRoot(version)
 	} else {
 		debug("SAVE TREE %v\n", version)
 		// Save the current tree.
 		tree.ndb.SaveBranch(tree.root)
-		tree.ndb.SaveOrphans(version, tree.orphans)
+		//tree.ndb.SaveOrphans(version, tree.orphans)
 		tree.ndb.SaveRoot(tree.root, version)
 	}
 
