@@ -35,9 +35,9 @@ var (
 // NodeDB is used by MutableTree & ImmutableTree to persist & load nodes to a DB
 type NodeDB interface {
 	GetNode(hash []byte) *Node
-	SaveNode(node *Node, flushToDisk bool)
+	SaveNode(node *Node, flushToDisk, useMemDB bool)
 	Has(hash []byte) bool
-	SaveBranch(node *Node, flushToDisk bool) []byte
+	SaveBranch(node *Node, flushToDisk, useMemDB bool) []byte
 	DeleteVersion(version int64, checkLatestVersion bool)
 	DeleteMemoryVersion(version, previous int64, unsavedOrphans *map[string]int64)
 	SaveOrphans(version int64, orphans map[string]int64)
@@ -49,6 +49,7 @@ type NodeDB interface {
 	ResetMemNodes()
 	ResetBatch()
 	RestMemBatch()
+	PrintDiskDb()
 
 	getRoot(version int64) []byte
 	getRoots() (map[int64][]byte, error)
@@ -151,8 +152,14 @@ func (ndb *nodeDB) GetNode(hash []byte) *Node {
 	return node
 }
 
+func (ndb *nodeDB) PrintDiskDb() {
+	fmt.Println("disk database **********************************")
+	ndb.db.Print()
+	fmt.Println("***************************************************")
+}
+
 // SaveNode saves a node to disk.
-func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
+func (ndb *nodeDB) SaveNode(node *Node, flushToDisk, useMemDB bool) {
 	ndb.mtx.Lock()
 	defer ndb.mtx.Unlock()
 
@@ -172,7 +179,7 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 		panic(err)
 	}
 
-	if flushToDisk == true {
+	if !useMemDB || flushToDisk == true {
 		ndb.batch.Set(ndb.nodeKey(node.hash), buf.Bytes())
 		node.persisted = true
 	} else {
@@ -212,7 +219,7 @@ func (ndb *nodeDB) Has(hash []byte) bool {
 // NOTE: This function clears leftNode/rigthNode recursively and
 // calls _hash() on the given node.
 // TODO refactor, maybe use hashWithCount() but provide a callback.
-func (ndb *nodeDB) SaveBranch(node *Node, flushToDisk bool) []byte {
+func (ndb *nodeDB) SaveBranch(node *Node, flushToDisk, useMemDB bool) []byte {
 	if node.persisted {
 		return node.hash
 	}
@@ -220,16 +227,16 @@ func (ndb *nodeDB) SaveBranch(node *Node, flushToDisk bool) []byte {
 		return node.hash
 	}
 	if node.leftNode != nil {
-		node.leftHash = ndb.SaveBranch(node.leftNode, flushToDisk)
+		node.leftHash = ndb.SaveBranch(node.leftNode, flushToDisk, useMemDB)
 	}
 	if node.rightNode != nil {
-		node.rightHash = ndb.SaveBranch(node.rightNode, flushToDisk)
+		node.rightHash = ndb.SaveBranch(node.rightNode, flushToDisk, useMemDB)
 	}
 
 	node._hash()
-	ndb.SaveNode(node, flushToDisk)
+	ndb.SaveNode(node, flushToDisk, useMemDB)
 
-	if flushToDisk == true {
+	if flushToDisk == true || !useMemDB {
 		node.leftNode = nil
 		node.rightNode = nil
 	}
@@ -474,9 +481,15 @@ func (ndb *nodeDB) Commit() {
 	ndb.mtx.Lock()
 	defer ndb.mtx.Unlock()
 
+	//fmt.Println("before commit--------------------")
+	//fmt.Println("memdb"); ndb.dbMem.Print(); fmt.Println("..........................")
+	//fmt.Println("diskdb"); ndb.db.Print(); fmt.Println("-----------------------------");fmt.Println()
 	ndb.batch.Write()
 	ndb.batch = ndb.db.NewBatch()
 	ndb.FlushCache()
+	//fmt.Println("after commit--------------------")
+	//fmt.Println("memdb"); ndb.dbMem.Print(); fmt.Println("..........................")
+	//fmt.Println("diskdb"); ndb.db.Print(); fmt.Println("-----------------------------");fmt.Println()
 }
 
 func (ndb *nodeDB) getRoot(version int64) []byte {

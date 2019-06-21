@@ -453,7 +453,7 @@ func (node *Node) LoadAndSave(
 		node.getRightNode(tree).LoadAndSave(tree, targetNdb, savesPerCommit, savesSinceLastCommit, callback)
 	}
 	node.persisted = false
-	targetNdb.SaveNode(node, true)
+	targetNdb.SaveNode(node, true, false)
 
 	*savesSinceLastCommit++
 	if savesPerCommit != 0 && *savesSinceLastCommit >= savesPerCommit {
