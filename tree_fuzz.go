@@ -98,6 +98,7 @@ func genRandomProgram(size int) *Program {
 			}
 		}
 	}
+
 	return p
 }
 
