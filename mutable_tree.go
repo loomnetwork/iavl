@@ -347,14 +347,20 @@ func (tree *MutableTree) SaveVersion() ([]byte, int64, error) {
 		// There can still be orphans, for example if the root is the node being
 		// removed.
 		debug("SAVE EMPTY TREE %v\n", version)
-		tree.ndb.SaveOrphans(version, tree.orphans)
-		tree.ndb.SaveEmptyRoot(version)
+		//tree.ndb.SaveOrphans(version, tree.orphans)
+		err := tree.ndb.SaveEmptyRoot(version)
+		if err != nil {
+			return nil, version, err
+		}
 	} else {
 		debug("SAVE TREE %v\n", version)
 		// Save the current tree.
 		tree.ndb.SaveBranch(tree.root)
-		tree.ndb.SaveOrphans(version, tree.orphans)
-		tree.ndb.SaveRoot(tree.root, version)
+		//tree.ndb.SaveOrphans(version, tree.orphans)
+		err := tree.ndb.SaveRoot(tree.root, version)
+		if err != nil {
+			return nil, version, err
+		}
 	}
 	tree.ndb.Commit()
 	tree.version = version
@@ -370,6 +376,7 @@ func (tree *MutableTree) SaveVersion() ([]byte, int64, error) {
 
 // DeleteVersion deletes a tree version from disk. The version can then no
 // longer be accessed.
+// Deprecated: Now only deletes root key.
 func (tree *MutableTree) DeleteVersion(version int64) error {
 	if version == 0 {
 		return cmn.NewError("version must be greater than 0")
@@ -391,6 +398,7 @@ func (tree *MutableTree) DeleteVersion(version int64) error {
 
 // deleteVersionsFrom deletes tree version from disk specified version to latest version. The version can then no
 // longer be accessed.
+// Deprecated: Now only deletes root keys.
 func (tree *MutableTree) deleteVersionsFrom(version int64) error {
 	if version <= 0 {
 		return cmn.NewError("version must be greater than 0")

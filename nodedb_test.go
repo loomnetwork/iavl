@@ -22,6 +22,7 @@ func BenchmarkNodeKey2(b *testing.B) {
 	}
 }
 
+/*
 func BenchmarkOrphanKey(b *testing.B) {
 	ndb := &nodeDB{}
 	hashes := makeHashes(b, 2432325)
@@ -37,7 +38,7 @@ func BenchmarkOrphanKey2(b *testing.B) {
 		ndb.orphanKey(1234, 1239, hashes[i])
 	}
 }
-
+*/
 func makeHashes(b *testing.B, seed int64) [][]byte {
 	b.StopTimer()
 	rnd := rand.NewSource(seed)

@@ -26,7 +26,7 @@ var (
 	// to exist, while the second number represents the *earliest* version at
 	// which it is expected to exist - which starts out by being the version
 	// of the node being orphaned.
-	orphanKeyFormat = NewKeyFormat('o', int64Size, int64Size, hashSize) // o<last-version><first-version><hash>
+	//orphanKeyFormat = NewKeyFormat('o', int64Size, int64Size, hashSize) // o<last-version><first-version><hash>
 
 	// Root nodes are indexed separately by their version
 	rootKeyFormat = NewKeyFormat('r', int64Size) // r<version>
@@ -39,7 +39,7 @@ type NodeDB interface {
 	Has(hash []byte) bool
 	SaveBranch(node *Node) []byte
 	DeleteVersion(version int64, checkLatestVersion bool)
-	SaveOrphans(version int64, orphans map[string]int64)
+	//SaveOrphans(version int64, orphans map[string]int64)
 	SaveRoot(root *Node, version int64) error
 	SaveEmptyRoot(version int64) error
 	Commit()
@@ -54,9 +54,9 @@ type NodeDB interface {
 	roots() map[int64][]byte
 	leafNodes() []*Node
 	nodes() []*Node
-	orphans() [][]byte
+	//orphans() [][]byte
 	size() int
-	traverseOrphans(fn func(k, v []byte))
+	//traverseOrphans(fn func(k, v []byte))
 }
 
 type nodeDB struct {
@@ -185,14 +185,16 @@ func (ndb *nodeDB) SaveBranch(node *Node) []byte {
 }
 
 // DeleteVersion deletes a tree version from disk.
+// Deprecated: Only deletes root key.
 func (ndb *nodeDB) DeleteVersion(version int64, checkLatestVersion bool) {
 	ndb.mtx.Lock()
 	defer ndb.mtx.Unlock()
 
-	ndb.deleteOrphans(version)
+	//ndb.deleteOrphans(version)
 	ndb.deleteRoot(version, checkLatestVersion)
 }
 
+/*
 // Saves orphaned nodes to disk under a special prefix.
 // version: the new version being saved.
 // orphans: the orphan nodes created since version-1
@@ -203,7 +205,7 @@ func (ndb *nodeDB) SaveOrphans(version int64, orphans map[string]int64) {
 	toVersion := ndb.getPreviousVersion(version)
 	for hash, fromVersion := range orphans {
 		debug("SAVEORPHAN %v-%v %X\n", fromVersion, toVersion, hash)
-		ndb.saveOrphan([]byte(hash), fromVersion, toVersion)
+		ndb.saveOrphan([]byte(hash), fromVersion, toVersion)dep
 	}
 }
 
@@ -249,14 +251,14 @@ func (ndb *nodeDB) deleteOrphans(version int64) {
 		}
 	})
 }
-
+*/
 func (ndb *nodeDB) nodeKey(hash []byte) []byte {
 	return nodeKeyFormat.KeyBytes(hash)
 }
 
-func (ndb *nodeDB) orphanKey(fromVersion, toVersion int64, hash []byte) []byte {
-	return orphanKeyFormat.Key(toVersion, fromVersion, hash)
-}
+//func (ndb *nodeDB) orphanKey(fromVersion, toVersion int64, hash []byte) []byte {
+//	return orphanKeyFormat.Key(toVersion, fromVersion, hash)
+//}
 
 func (ndb *nodeDB) rootKey(version int64) []byte {
 	return rootKeyFormat.Key(version)
@@ -287,7 +289,7 @@ func (ndb *nodeDB) getPreviousVersion(version int64) int64 {
 	defer itr.Close()
 
 	pversion := int64(-1)
-	for ; itr.Valid(); itr.Next() {
+	for itr.Valid() {
 		k := itr.Key()
 		rootKeyFormat.Scan(k, &pversion)
 		return pversion
@@ -306,6 +308,7 @@ func (ndb *nodeDB) deleteRoot(version int64, checkLatestVersion bool) {
 	ndb.batch.Delete(key)
 }
 
+/*
 func (ndb *nodeDB) traverseOrphans(fn func(k, v []byte)) {
 	ndb.traversePrefix(orphanKeyFormat.Key(), fn)
 }
@@ -314,7 +317,7 @@ func (ndb *nodeDB) traverseOrphans(fn func(k, v []byte)) {
 func (ndb *nodeDB) traverseOrphansVersion(version int64, fn func(k, v []byte)) {
 	ndb.traversePrefix(orphanKeyFormat.Key(version), fn)
 }
-
+*/
 // Traverse all keys.
 func (ndb *nodeDB) traverse(fn func(key, value []byte)) {
 	itr := ndb.db.Iterator(nil, nil)
@@ -430,6 +433,7 @@ func (ndb *nodeDB) nodes() []*Node {
 	return nodes
 }
 
+/*
 func (ndb *nodeDB) orphans() [][]byte {
 	orphans := [][]byte{}
 
@@ -438,7 +442,7 @@ func (ndb *nodeDB) orphans() [][]byte {
 	})
 	return orphans
 }
-
+*/
 func (ndb *nodeDB) roots() map[int64][]byte {
 	roots, _ := ndb.getRoots()
 	return roots
@@ -485,10 +489,10 @@ func (ndb *nodeDB) String() string {
 	})
 	str += "\n"
 
-	ndb.traverseOrphans(func(key, value []byte) {
-		str += fmt.Sprintf("%s: %x\n", string(key), value)
-	})
-	str += "\n"
+	//ndb.traverseOrphans(func(key, value []byte) {
+	//	str += fmt.Sprintf("%s: %x\n", string(key), value)
+	//})
+	//str += "\n"
 
 	ndb.traverseNodes(func(hash []byte, node *Node) {
 		if len(hash) == 0 {
