@@ -16,7 +16,7 @@ type MutableTree struct {
 	*ImmutableTree                  // The current, working tree.
 	lastSaved      *ImmutableTree   // The most recently saved tree.
 	orphans        map[string]int64 // Nodes removed by changes to working tree.
-	memversions    map[int64]bool   // The previous, saved versions of the tree in mem.
+	memVersions    map[int64]bool   // The previous, saved versions of the tree in mem.
 	versions       map[int64]bool   // The previous, saved versions of the tree.
 	ndb            *nodeDB
 }
@@ -30,7 +30,7 @@ func NewMutableTree(db dbm.DB, cacheSize int) *MutableTree {
 		ImmutableTree: head,
 		lastSaved:     head.clone(),
 		orphans:       map[string]int64{},
-		memversions:   map[int64]bool{},
+		memVersions:   map[int64]bool{},
 		versions:      map[int64]bool{},
 		ndb:           ndb,
 	}
@@ -379,7 +379,7 @@ func (tree *MutableTree) FlushMemVersionDisk() ([]byte, int64, error) {
 	x, y, err := tree.saveVersion(true)
 	nextTimeClear = true
 	tree.ndb.dbMem = dbm.NewMemDB()
-	tree.memversions = map[int64]bool{}
+	tree.memVersions = map[int64]bool{}
 	tree.ndb.memNodes = map[string]*Node{}
 	return x, y, err
 }
@@ -397,7 +397,7 @@ func (tree *MutableTree) saveVersion(flushToDisk bool) ([]byte, int64, error) {
 		tree.ndb.batch = tree.ndb.db.NewBatch()
 	} else {
 		tree.ndb.batch = tree.ndb.dbMem.NewBatch()
-		tree.memversions[version] = true
+		tree.memVersions[version] = true
 	}
 
 	if tree.versions[version] {
@@ -452,13 +452,13 @@ func (tree *MutableTree) DeleteVersion(version int64) error {
 // DeleteVersionFull deletes a tree version from disk or memory based on the flag. The version can then no
 // longer be accessed.
 func (tree *MutableTree) DeleteVersionFull(version int64, memDeleteAlso bool) error {
-	if tree.memversions[version] == true {
+	if tree.memVersions[version] == true {
 		//sometimes you dont want to bother deleting versions in memory
 		if memDeleteAlso == false {
 			return nil
 		}
 		tree.ndb.batch = tree.ndb.dbMem.NewBatch()
-		delete(tree.memversions, version)
+		delete(tree.memVersions, version)
 	} else {
 		tree.ndb.batch = tree.ndb.db.NewBatch()
 	}
