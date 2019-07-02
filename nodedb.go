@@ -113,7 +113,6 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 	if node.persisted {
 		panic("Shouldn't be calling save on an already persisted node.")
 	}
-	//fmt.Printf("SaveNode-%X\n", node.hash)
 
 	// Save node bytes to db.
 	buf := new(bytes.Buffer)
@@ -121,18 +120,13 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 		panic(err)
 	}
 
-	//	fmt.Printf("Saving Hash -%X\n", node.hash)
 	if flushToDisk == true {
 		ndb.batch.Set(ndb.nodeKey(node.hash), buf.Bytes())
 		node.persisted = true
-		//fmt.Printf("Persisted-%X\n", node.hash)
 	} else {
 		node.persistedMem = true
 		ndb.memNodes[string(node.hash)] = node
 	}
-
-	//debug("BATCH SAVE %X %p --%v\n left -%X \n right -%X \n", node.hash, node, node, node.leftHash, node.rightHash)
-
 }
 
 // Has checks if a hash exists in the database.
@@ -155,7 +149,6 @@ func (ndb *nodeDB) Has(hash []byte) bool {
 // TODO refactor, maybe use hashWithCount() but provide a callback.
 func (ndb *nodeDB) SaveBranch(node *Node, flushToDisk bool) []byte {
 	if node.persisted {
-		//debug("Skipping cause persisted -%X\n", node.hash)
 		return node.hash
 	}
 	if node.persistedMem && flushToDisk == false {
