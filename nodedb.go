@@ -120,7 +120,7 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 		panic(err)
 	}
 
-	if flushToDisk == true {
+	if flushToDisk {
 		ndb.batch.Set(ndb.nodeKey(node.hash), buf.Bytes())
 		node.persisted = true
 	} else {
@@ -165,7 +165,7 @@ func (ndb *nodeDB) SaveBranch(node *Node, flushToDisk bool) []byte {
 	node._hash()
 	ndb.SaveNode(node, flushToDisk)
 
-	if flushToDisk == true {
+	if flushToDisk {
 		node.leftNode = nil
 		node.rightNode = nil
 	}

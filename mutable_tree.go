@@ -390,7 +390,7 @@ func (tree *MutableTree) SaveVersion() ([]byte, int64, error) {
 func (tree *MutableTree) saveVersion(flushToDisk bool) ([]byte, int64, error) {
 	version := tree.version + 1
 
-	if flushToDisk == true {
+	if flushToDisk {
 		tree.ndb.batch = tree.ndb.db.NewBatch()
 	} else {
 		tree.ndb.batch = tree.ndb.dbMem.NewBatch()
@@ -449,7 +449,7 @@ func (tree *MutableTree) DeleteVersion(version int64) error {
 // DeleteVersionFull deletes a tree version from disk or memory based on the flag. The version can then no
 // longer be accessed.
 func (tree *MutableTree) DeleteVersionFull(version int64, memDeleteAlso bool) error {
-	if tree.memVersions[version] == true {
+	if tree.memVersions[version] {
 		//sometimes you dont want to bother deleting versions in memory
 		if memDeleteAlso == false {
 			return nil
