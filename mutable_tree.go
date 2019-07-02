@@ -366,8 +366,6 @@ func (tree *MutableTree) GetVersioned(key []byte, version int64) (
 	return -1, nil
 }
 
-var nextTimeClear = false
-
 // SaveVersionMem saves a new tree version to disk, based on the current state of
 // the tree. Returns the hash and new version number.
 func (tree *MutableTree) SaveVersionMem() ([]byte, int64, error) {
@@ -377,7 +375,6 @@ func (tree *MutableTree) SaveVersionMem() ([]byte, int64, error) {
 // FlushMemDisk saves a new tree to disk and removes all the versions in memory
 func (tree *MutableTree) FlushMemVersionDisk() ([]byte, int64, error) {
 	x, y, err := tree.saveVersion(true)
-	nextTimeClear = true
 	tree.ndb.dbMem = dbm.NewMemDB()
 	tree.memVersions = map[int64]bool{}
 	tree.ndb.memNodes = map[string]*Node{}
