@@ -107,7 +107,7 @@ func (ndb *nodeDB) SaveNode(node *Node, flushToDisk bool) {
 	if node.hash == nil {
 		panic("Expected to find node.hash, but none found.")
 	}
-	if node.persistedMem == true && flushToDisk == false {
+	if node.persistedMem && !flushToDisk {
 		return
 	}
 	if node.persisted {
@@ -151,7 +151,7 @@ func (ndb *nodeDB) SaveBranch(node *Node, flushToDisk bool) []byte {
 	if node.persisted {
 		return node.hash
 	}
-	if node.persistedMem && flushToDisk == false {
+	if node.persistedMem && !flushToDisk {
 		return node.hash
 	}
 
