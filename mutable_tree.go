@@ -449,6 +449,8 @@ func (tree *MutableTree) DeleteVersion(version int64) error {
 	return tree.DeleteVersionFull(version, true)
 }
 
+// DeleteVersionFull deletes a tree version from disk or memory based on the flag. The version can then no
+// longer be accessed.
 func (tree *MutableTree) DeleteVersionFull(version int64, memDeleteAlso bool) error {
 	if tree.memversions[version] == true {
 		//sometimes you dont want to bother deleting versions in memory
