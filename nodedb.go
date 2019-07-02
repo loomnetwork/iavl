@@ -400,7 +400,6 @@ func (ndb *nodeDB) saveRoot(hash []byte, version int64) error {
 	ndb.mtx.Lock()
 	defer ndb.mtx.Unlock()
 
-	//TODO NEED TO BE ABLE TO SET THIS TO MEMORY ALSO
 	if version != ndb.getLatestVersion()+1 {
 		return fmt.Errorf("Must save consecutive versions. Expected %d, got %d", ndb.getLatestVersion()+1, version)
 	}
