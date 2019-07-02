@@ -375,7 +375,6 @@ func (tree *MutableTree) SaveVersionMem() ([]byte, int64, error) {
 }
 
 // FlushMemDisk saves a new tree to disk and removes all the versions in memory
-// TODO keep some in an LRU Cache
 func (tree *MutableTree) FlushMemVersionDisk() ([]byte, int64, error) {
 	x, y, err := tree.saveVersion(true)
 	nextTimeClear = true
