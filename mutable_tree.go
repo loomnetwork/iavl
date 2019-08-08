@@ -312,6 +312,25 @@ func (tree *MutableTree) LoadVersion(targetVersion int64) (int64, error) {
 	return latestVersion, nil
 }
 
+func (tree *MutableTree) LatestVersion(maxVersion int64) (int64, error) {
+	roots, err := tree.ndb.getRoots()
+	if err != nil {
+		return 0, err
+	}
+
+	if len(roots) == 0 {
+		return 0, nil
+	}
+
+	latestVersion := int64(0)
+	for version := range roots {
+		if version > latestVersion && (maxVersion == 0 || version <= maxVersion) {
+			latestVersion = version
+		}
+	}
+	return latestVersion, nil
+}
+
 // LoadVersionOverwrite returns the version number of targetVersion.
 // Higher versions' data will be deleted.
 func (tree *MutableTree) LoadVersionForOverwriting(targetVersion int64) (int64, error) {
