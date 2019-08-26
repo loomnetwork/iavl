@@ -3,8 +3,8 @@ package iavl
 import (
 	"fmt"
 
-	sha3 "github.com/miguelmota/go-solidity-sha3"
 	"github.com/tendermint/tendermint/libs/common"
+	"golang.org/x/crypto/sha3"
 )
 
 // This file implement fuzz testing by generating programs and then running
@@ -148,7 +148,9 @@ func getRandomBlockHashKeys(size int, prefix []byte) *Program {
 
 	for p.size() < size {
 		r, v := []byte(common.RandStr(4)), []byte(common.RandStr(1))
-		key := append(prefix, sha3.SoliditySHA3(r)...)
+		hash := sha3.NewLegacyKeccak256()
+		hash.Write(r)
+		key := append(prefix, hash.Sum(nil)...)
 		switch common.RandInt() % 4 {
 		case 0, 1, 2:
 			p.addInstruction(instruction{op: "SET", k: key, v: v})
