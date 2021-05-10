@@ -36,6 +36,18 @@ func NewMutableTree(db dbm.DB, cacheSize int) *MutableTree {
 	}
 }
 
+// NewMutableTreeWithVersion returns a new tree with the specified cache size, datastore, and version.
+// If a non-zero version is specified the db must be empty, otherwise the result of saving the tree
+// to the db may be unpredictable!
+func NewMutableTreeWithVersion(db dbm.DB, cacheSize int, version int64) *MutableTree {
+	tree := NewMutableTree(db, cacheSize)
+	if version > 0 {
+		tree.version = version
+		tree.ndb.resetLatestVersion(version)
+	}
+	return tree
+}
+
 // IsEmpty returns whether or not the tree has any keys. Only trees that are
 // not empty can be saved.
 func (tree *MutableTree) IsEmpty() bool {
