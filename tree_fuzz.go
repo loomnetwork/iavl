@@ -109,11 +109,11 @@ func (p *Program) ExecuteBlock(tree *MutableTree) error {
 	return nil
 }
 
-func GenerateBlocksHashKeys(numBlocks, blockSize int, prefix []byte) []*Program {
+func GenerateBlocksHashKeys(numBlocks, blockSize int) []*Program {
 	fmt.Println()
 	var history []*Program
 	for i := 0; i < numBlocks; i++ {
-		history = append(history, getRandomBlockHashKeys(blockSize, prefix))
+		history = append(history, getRandomBlockHashKeys(blockSize))
 	}
 	return history
 }
@@ -143,14 +143,14 @@ func getRandomBlock(size int) *Program {
 	return p
 }
 
-func getRandomBlockHashKeys(size int, prefix []byte) *Program {
+func getRandomBlockHashKeys(size int) *Program {
 	p := &Program{}
 
 	for p.size() < size {
 		r, v := []byte(common.RandStr(4)), []byte(common.RandStr(1))
 		hash := sha3.NewLegacyKeccak256()
 		hash.Write(r)
-		key := append(prefix, hash.Sum(nil)...)
+		key := hash.Sum(nil)
 		switch common.RandInt() % 4 {
 		case 0, 1, 2:
 			p.addInstruction(instruction{op: "SET", k: key, v: v})
